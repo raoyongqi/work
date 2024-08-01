@@ -15,7 +15,7 @@ EXCEL_FILE = os.path.join(DATA_DIR, "data.xlsx")
 @router.post("/load-json/")
 def load_json():
     try:
-        with open("data.json", "r") as file:
+        with open("data/data.json", "r") as file:
             data = json.load(file)
         
         if not data:
