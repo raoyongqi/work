@@ -4,7 +4,7 @@ from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 
 # 设置数据目录和文件路径
-DATA_DIR = 'data'
+DATA_DIR = 'data'  # 更新为实际的数据目录
 input_file = os.path.join(DATA_DIR, 'random_data.xlsx')
 output_file = os.path.join(DATA_DIR, 'merged_data.xlsx')
 
@@ -24,27 +24,28 @@ def merge_cells(ws, col, start_row, end_row):
     cell = ws.cell(row=start_row, column=col)
     cell.alignment = Alignment(horizontal='center', vertical='center')
 
-# 初始化合并起始行和当前值
+# 遍历前3列，对“活跃”行进行合并操作
 for col in range(1, 4):  # 前三列
-    merge_start = 2  # 从第二行开始，因为第一行是标题
-    current_value = ws.cell(row=merge_start, column=col).value
-    
-    for row in range(3, ws.max_row + 1):  # 从第三行开始遍历
-        cell_value = ws.cell(row=row, column=col).value
-        status = ws.cell(row=row, column=4).value  # 第四列为状态列
-        
-        if cell_value == current_value and status != '不活跃':
-            # 如果当前值和前一行的值相同且状态不为“不活跃”，继续
-            continue
+    merge_start = None
+
+    for row in range(2, ws.max_row + 1):
+        if ws.cell(row=row, column=4).value == '活跃':  # 状态列为第四列
+            if merge_start is None:
+                merge_start = row
+            current_value = ws.cell(row=row, column=col).value
+            next_value = ws.cell(row=row + 1, column=col).value if row < ws.max_row else None
+            
+            if current_value != next_value:
+                if merge_start is not None and merge_start != row:
+                    merge_cells(ws, col, merge_start, row)
+                merge_start = None
         else:
-            # 如果当前值和前一行的值不同，进行合并操作
-            if row - 1 > merge_start:  # 至少有两行需要合并
+            if merge_start is not None:
                 merge_cells(ws, col, merge_start, row - 1)
-            merge_start = row
-            current_value = cell_value
+                merge_start = None
 
     # 合并最后一组单元格
-    if ws.max_row >= merge_start and ws.cell(row=merge_start, column=col).value == current_value:
+    if merge_start is not None and ws.cell(row=ws.max_row, column=4).value == '活跃':
         merge_cells(ws, col, merge_start, ws.max_row)
 
 # 保存文件
